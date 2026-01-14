@@ -1,0 +1,111 @@
+version: '3.8'
+services:
+  # Web counter server with in-memory backend
+  web-counter-inmemory:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: web-counter-inmemory
+    ports:
+      - "8080:8080"
+    command: ["python", "server.py", "--backend", "inmemory", "--port", "8080"]
+    networks:
+      - counter-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8080/count')"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+  # Web counter server with file backend
+  web-counter-file:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: web-counter-file
+    ports:
+      - "8081:8080"
+    command: ["python", "server.py", "--backend", "file", "--port", "8080", "--file", "/data/counter.txt"]
+    volumes:
+      - file-data:/data
+    networks:
+      - counter-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8080/count')"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres-counter
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: counter_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - counter-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+  # Web counter server with PostgreSQL backend (atomic update)
+  web-counter-postgres:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: web-counter-postgres
+    ports:
+      - "8082:8080"
+    command: ["python", "server.py", "--backend", "postgres", "--port", "8080"]
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=counter_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - counter-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8080/count')"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+  # Test runner - runs all experiments automatically
+  test-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile.test-runner
+    container_name: web-counter-test-runner
+    depends_on:
+      web-counter-inmemory:
+        condition: service_healthy
+      web-counter-file:
+        condition: service_healthy
+      web-counter-postgres:
+        condition: service_healthy
+    networks:
+      - counter-network
+    environment:
+      - INMEMORY_URL=http://web-counter-inmemory:8080
+      - FILE_URL=http://web-counter-file:8080
+      - POSTGRES_URL=http://web-counter-postgres:8080
+      - REQUESTS_PER_CLIENT=10000
+    profiles:
+      - testing
+volumes:
+  file-data:
+  postgres-data:
+networks:
+  counter-network:
+    driver: bridge
