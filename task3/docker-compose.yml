@@ -1,0 +1,60 @@
+services:
+  hazelcast-node1:
+    image: hazelcast/hazelcast:5.4.0
+    container_name: hazelcast-node1
+    environment:
+      - JAVA_OPTS=-Dhazelcast.config=/opt/hazelcast/config/hazelcast.yaml
+    ports:
+      - "5701:5701"
+    volumes:
+      - ./hazelcast-config.yaml:/opt/hazelcast/config/hazelcast.yaml
+    networks:
+      hazelcast-network:
+        ipv4_address: 172.28.0.11
+
+  hazelcast-node2:
+    image: hazelcast/hazelcast:5.4.0
+    container_name: hazelcast-node2
+    environment:
+      - JAVA_OPTS=-Dhazelcast.config=/opt/hazelcast/config/hazelcast.yaml
+    ports:
+      - "5702:5701"
+    volumes:
+      - ./hazelcast-config.yaml:/opt/hazelcast/config/hazelcast.yaml
+    networks:
+      hazelcast-network:
+        ipv4_address: 172.28.0.12
+
+  hazelcast-node3:
+    image: hazelcast/hazelcast:5.4.0
+    container_name: hazelcast-node3
+    environment:
+      - JAVA_OPTS=-Dhazelcast.config=/opt/hazelcast/config/hazelcast.yaml
+    ports:
+      - "5703:5701"
+    volumes:
+      - ./hazelcast-config.yaml:/opt/hazelcast/config/hazelcast.yaml
+    networks:
+      hazelcast-network:
+        ipv4_address: 172.28.0.13
+
+  counter-client:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: counter-client
+    depends_on:
+      - hazelcast-node1
+      - hazelcast-node2
+      - hazelcast-node3
+    networks:
+      - hazelcast-network
+    command: tail -f /dev/null
+
+networks:
+  hazelcast-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+

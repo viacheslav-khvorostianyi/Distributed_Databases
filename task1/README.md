@@ -1,6 +1,15 @@
 ### Task1
 To run the performance tests for the web-counter application using Docker, follow the steps below:
 ```./run_all_docker.sh```
+
+To run performance testS for Hazelcast using Docker, follow the steps below:
+```bash
+docker compose -f docker-compose-hazelcast.yml up -d
+sleep 30
+docker compose -f docker-compose-hazelcast.yml run --rm client \
+    python client.py --url http://server:8080 --run-all --requests-per-client 10000
+````
+
 #### The output:
 ```bash
 web-counter-test-runner | ============================================================
@@ -180,8 +189,52 @@ web-counter-test-runner | ======================================================
 web-counter-test-runner | All experiments completed successfully!                                                                                                                                                                   
 web-counter-test-runner | ============================================================                                                                                                                                              
 
-==========================================
-All tests completed!
-==========================================
+HAZELCAST EXPERIMENTS
+=============================================
+############################################################
+# Running all experiments with 1000 requests per client
+# Server: http://server:8080
+############################################################
+Counter reset successfully
 
+============================================================
+Running experiment: 1 client(s), 1000 requests each
+============================================================
+
+Results:
+  Total count: 1000
+  Expected count: 1000
+  Elapsed time: 6.9047 seconds
+  Throughput: 144.83 requests/second
+Counter reset successfully
+
+============================================================
+Running experiment: 2 client(s), 1000 requests each
+============================================================
+
+Results:
+  Total count: 2000
+  Expected count: 2000
+  Elapsed time: 10.9221 seconds
+  Throughput: 183.12 requests/second
+Counter reset successfully
+
+============================================================
+Running experiment: 5 client(s), 1000 requests each
+============================================================
+
+Results:
+  Total count: 5000
+  Expected count: 5000
+  Elapsed time: 17.9176 seconds
+  Throughput: 279.06 requests/second
+
+============================================================
+SUMMARY OF ALL EXPERIMENTS
+============================================================
+Clients    Total Req    Time (s)     Throughput (req/s)
+------------------------------------------------------------
+1     1000         6.9047       144.83
+2     2000         10.9221      183.12
+5     5000         17.9176      279.06
 ```

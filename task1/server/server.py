@@ -3,6 +3,7 @@ from flask import Flask, jsonify, request
 from counter_inmemory import InMemoryCounter
 from counter_file import FileCounter
 from counter_postgres import PostgresCounter
+from counter_hazelcast import HazelcastCounter
 
 app = Flask(__name__)
 counter = None
@@ -27,12 +28,14 @@ def reset():
     global counter
     if isinstance(counter, InMemoryCounter):
         counter = InMemoryCounter()
-    elif isinstance(counter,FileCounter):
+    elif isinstance(counter, FileCounter):
         import os
         file_path = counter.file_path
         if os.path.exists(file_path):
             os.remove(file_path)
         counter = FileCounter(file_path=file_path)
+    elif isinstance(counter, HazelcastCounter):
+        counter.reset()
     else:
         counter.reset()
     return jsonify({"message": "Counter reset", "value": counter.get()}), 200
@@ -40,7 +43,7 @@ def reset():
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--backend", choices=["inmemory", "file", "postgres"], default="inmemory")
+    parser.add_argument("--backend", choices=["inmemory", "file", "postgres", "hazelcast"], default="inmemory")
     parser.add_argument("--port", type=int, default=8080)
     parser.add_argument("--file", default="/data/counter.txt")
     args = parser.parse_args()
@@ -55,6 +58,9 @@ def main():
     elif args.backend == "postgres":
         print(f"Using PostgreSQL backend (atomic in-place update)")
         counter = PostgresCounter()
+    elif args.backend == "hazelcast":
+        print(f"Using Hazelcast backend (CP Subsystem with IAtomicLong)")
+        counter = HazelcastCounter()
 
     print(f"Starting server on port {args.port}")
     # threaded=True to allow concurrent requests

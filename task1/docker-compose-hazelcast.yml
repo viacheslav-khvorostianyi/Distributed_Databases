@@ -1,0 +1,81 @@
+services:
+  # Hazelcast Cluster (3 nodes)
+  hazelcast-node1:
+    image: hazelcast/hazelcast:5.4.0
+    container_name: hazelcast-node1-task1
+    environment:
+      - JAVA_OPTS=-Dhazelcast.config=/opt/hazelcast/config/hazelcast.yaml
+    ports:
+      - "5701:5701"
+    volumes:
+      - ./hazelcast-config.yaml:/opt/hazelcast/config/hazelcast.yaml
+    networks:
+      task1-network:
+        ipv4_address: 172.27.0.11
+
+  hazelcast-node2:
+    image: hazelcast/hazelcast:5.4.0
+    container_name: hazelcast-node2-task1
+    environment:
+      - JAVA_OPTS=-Dhazelcast.config=/opt/hazelcast/config/hazelcast.yaml
+    ports:
+      - "5702:5701"
+    volumes:
+      - ./hazelcast-config.yaml:/opt/hazelcast/config/hazelcast.yaml
+    networks:
+      task1-network:
+        ipv4_address: 172.27.0.12
+
+  hazelcast-node3:
+    image: hazelcast/hazelcast:5.4.0
+    container_name: hazelcast-node3-task1
+    environment:
+      - JAVA_OPTS=-Dhazelcast.config=/opt/hazelcast/config/hazelcast.yaml
+    ports:
+      - "5703:5701"
+    volumes:
+      - ./hazelcast-config.yaml:/opt/hazelcast/config/hazelcast.yaml
+    networks:
+      task1-network:
+        ipv4_address: 172.27.0.13
+
+  # Web Counter Server with Hazelcast backend
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile.hazelcast
+    container_name: task1-hazelcast-server
+    depends_on:
+      - hazelcast-node1
+      - hazelcast-node2
+      - hazelcast-node3
+    environment:
+      - HAZELCAST_MEMBERS=172.27.0.11:5701,172.27.0.12:5701,172.27.0.13:5701
+      - HAZELCAST_CLUSTER=task1-cluster
+    ports:
+      - "8080:8080"
+    networks:
+      - task1-network
+    command: ["python", "server.py", "--backend", "hazelcast", "--port", "8080"]
+
+  # Client for testing
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile.client
+    container_name: task1-hazelcast-client
+    depends_on:
+      - server
+    environment:
+      - SERVER_URL=http://server:8080
+    networks:
+      - task1-network
+    command: tail -f /dev/null
+
+networks:
+  task1-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.27.0.0/16
+

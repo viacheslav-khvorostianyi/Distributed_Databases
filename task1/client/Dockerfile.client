@@ -1,18 +1,13 @@
--FROM python:3.11-slim
+FROM python:3.11-slim
 
 WORKDIR /app
 
-# Copy requirements and install
-COPY ../requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Install required packages
+RUN pip install --no-cache-dir requests
 
-# Copy client script and test runner
+# Copy client script
 COPY client.py .
-COPY ../run_tests_docker.sh .
 
-# Make script executable
-RUN chmod +x run_tests_docker.sh
-
-# Run the test script
-CMD ["./run_tests_docker.sh"]
+# Default command (can be overridden)
+CMD ["tail", "-f", "/dev/null"]
 

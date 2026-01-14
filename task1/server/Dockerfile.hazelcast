@@ -1,0 +1,14 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install dependencies
+RUN pip install flask hazelcast-python-client psycopg2-binary==2.9.9
+
+# Copy server files
+COPY *.py ./
+
+EXPOSE 8080
+
+CMD ["python", "server.py", "--backend", "hazelcast", "--port", "8080"]
+
