@@ -36,6 +36,7 @@ docker ps
 ```bash
 docker exec -it mongodb_container mongosh -u admin -p password
 ```
+**Run Performance Test:**
 ```
 pip install -r requirements.txt
 ```
