@@ -23,14 +23,15 @@
 
 ---
 ## Reqiuirements
-- Docker і Docker Compose
+- Docker and Docker Compose
 - Python 3.8+
 - pymongo
 
-
+**Start MongoDB Container:**
+```bash
 docker-compose up -d
 docker ps
-
+````
 **MongoDB CLI:**
 ```bash
 docker exec -it mongodb_container mongosh -u admin -p password
